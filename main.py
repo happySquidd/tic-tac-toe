@@ -3,12 +3,14 @@ from tkinter import ttk
 
 # Latest McGossy commit:
 #TODO:
+# Could probably use a code clean-up. We be feelin kind of noodly right now
 # Connect AI and go brrrr
 #
 # I hate this reliance on globals. I guess it's probably good to get the AI to start thinking global strategy. But dang it's annoying
 # Added buffers for end game states. On win/tie, click the board again to wipe it, or click button at bottom that declares game over state
-# Added a style map but that's only going to be useful if we can target buttons locationally and idk if that's possible
-# Ideally I wanted to highlight the winning combo before we reset the board
+# Added highlight to winning combo that resets with board
+# Added all buttons to dictionary with their coordinates as the key IE: "0 1" "2 2" etc
+#   I think this might be useful in doing a full restructure of the code if desired. As it's getting a little bit messy right now
 
 # latest happysquid commit:
 # TODO: make it loop instead of quitting as it does now (erase squares and start over)
@@ -30,15 +32,16 @@ style.map("C.TButton",
 mainframe = ttk.Frame(root, borderwidth=3)
 mainframe.grid(column=0, row=0)
 
-# a switch to determine whose turn it is
+# Switches for turn, game over state & text, and the last winning cords
 x_turn = True
 game_over = False
 game_over_text = StringVar()
+winning_cords = []
 
 # Custom button class that stores its location for switching button text
 class GameButton(ttk.Button):
-    def __init__(self, board, *args, **kwargs):
-        super().__init__(board, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.config(command=self.change_text)
 
     # Might leave this in here for future auto-wiping
@@ -51,8 +54,11 @@ class GameButton(ttk.Button):
     def change_text(self):
         global x_turn
         global game_over
+        global winning_cords
         #
         if game_over:
+            for cords in winning_cords:
+                all_game_buttons[f"{cords[0]} {cords[1]}"].configure(style="")
             self.wipe_game_board()
             game_over = False
             game_over_text.set('')
@@ -81,6 +87,7 @@ class GameButton(ttk.Button):
 
     def check_win_tie(self):
         global game_over
+        global winning_cords
         matrix = [  # horizontal
                   [[0, 0], [0, 1], [0, 2]],
                   [[1, 0], [1, 1], [1, 2]],
@@ -101,6 +108,10 @@ class GameButton(ttk.Button):
                         break
                 # Needs to return on win else a last move win will return win & tie
                 if win:
+                    # Adds highlight to winning row
+                    for cords in row_of_three:
+                        all_game_buttons[f"{cords[0]} {cords[1]}"].configure(style="C.TButton")
+                    winning_cords = row_of_three
                     game_over = True
                     game_over_text.set('WIN')
                     print("WIN")
@@ -127,14 +138,24 @@ def button_wipe_game_board():
                 letter.set('')
         game_over = False
         game_over_text.set('')
+        # Clears highlight
+        for cords in winning_cords:
+            all_game_buttons[f"{cords[0]} {cords[1]}"].configure(style="")
 
 
 # Main setup of game board with main game loop
 game_board = [[StringVar() for x in range(3)] for y in range(3)]
-# Makes a 3x3 board of buttons and places them into the mainframe
+# Create dictionary with stringed out cords as the key, each button as the item
+all_game_buttons = {}
 for i in range(len(game_board)):
     for j in range(len(game_board[i])):
-        GameButton(mainframe, textvariable=game_board[j][i]).grid(column=i, row=j, ipadx=15, ipady=40)
+        all_game_buttons[f"{j} {i}"] = GameButton(mainframe, textvariable=game_board[j][i])
+
+# grid each button
+for i in range(len(game_board)):
+    for j in range(len(game_board[i])):
+        all_game_buttons[f"{i} {j}"].grid(row=i, column=j, ipadx=15, ipady=40)
+
 
 # Bottom button for refreshing game board. Can only press if game state is WIN or TIE
 bottom_frame = ttk.Frame(root, borderwidth=3)
