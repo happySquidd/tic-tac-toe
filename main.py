@@ -3,15 +3,12 @@ from tkinter import ttk
 
 # Latest McGossy commit:
 #TODO:
-# Add pause before wiping screen / Reset button on game_over state
 # Connect AI and go brrrr
 #
-# Set up returns for Win & Tie as I imagine that'll be helpful when we move forward with plugging the learning algorithm
-# Added a function to wipe the board. Used on Win / Tie success
-# Cleaned up Tie condition
-# Made Win condition worse lmao
-# 1st turn after a win is currently working on a "loser goes first" strategy. IE: X wins, O goes first next
-# This is unintentional but idc if we keep it like that or not lol
+# I hate this reliance on globals. I guess it's probably good to get the AI to start thinking global strategy. But dang it's annoying
+# Added buffers for end game states. On win/tie, click the board again to wipe it, or click button at bottom that declares game over state
+# Added a style map but that's only going to be useful if we can target buttons locationally and idk if that's possible
+# Ideally I wanted to highlight the winning combo before we reset the board
 
 # latest happysquid commit:
 # TODO: make it loop instead of quitting as it does now (erase squares and start over)
@@ -23,12 +20,20 @@ from tkinter import ttk
 
 # Setting up root window
 root = Tk()
+# Only want to use style if we can figure out how to target buttons via location
+# Will change style of winning buttons to this style using self.config(style="C.TButton")
+style = ttk.Style(root)
+style.map("C.TButton",
+   foreground=[('!active', 'black'),('pressed', 'black'), ('active', 'black')],
+    background=[ ('!active','green'),('pressed', 'green'), ('active', 'green')]
+    )
 mainframe = ttk.Frame(root, borderwidth=3)
 mainframe.grid(column=0, row=0)
 
 # a switch to determine whose turn it is
 x_turn = True
-
+game_over = False
+game_over_text = StringVar()
 
 # Custom button class that stores its location for switching button text
 class GameButton(ttk.Button):
@@ -36,10 +41,7 @@ class GameButton(ttk.Button):
         super().__init__(board, *args, **kwargs)
         self.config(command=self.change_text)
 
-    # Literally just used for initial game_board setup lol. Won't work with assignment within class scope for game_board
-    def create_blank_game_board():
-        return [[StringVar() for x in range(3)] for y in range(3)]
-
+    # Might leave this in here for future auto-wiping
     def wipe_game_board(self):
         for row in game_board:
             for letter in row:
@@ -48,6 +50,14 @@ class GameButton(ttk.Button):
     # Changes text of button to X or O, then calls check_win() to see if the move was a winning move
     def change_text(self):
         global x_turn
+        global game_over
+        #
+        if game_over:
+            self.wipe_game_board()
+            game_over = False
+            game_over_text.set('')
+            return
+
         row = self.grid_info()['row']
         column = self.grid_info()['column']
 
@@ -70,6 +80,7 @@ class GameButton(ttk.Button):
         self.check_win_tie()
 
     def check_win_tie(self):
+        global game_over
         matrix = [  # horizontal
                   [[0, 0], [0, 1], [0, 2]],
                   [[1, 0], [1, 1], [1, 2]],
@@ -90,7 +101,8 @@ class GameButton(ttk.Button):
                         break
                 # Needs to return on win else a last move win will return win & tie
                 if win:
-                    self.wipe_game_board()
+                    game_over = True
+                    game_over_text.set('WIN')
                     print("WIN")
                     return "WIN"
 
@@ -98,18 +110,35 @@ class GameButton(ttk.Button):
         for row in game_board:
             for letter in row:
                 if letter.get() == '':
-                    return False
+                    return
 
-        self.wipe_game_board()
+        game_over = True
+        game_over_text.set('TIE')
         print("TIE")
         return "TIE"
 
 
+# For bottom button
+def button_wipe_game_board():
+    global game_over
+    if game_over_text.get() in ['WIN', 'TIE']:
+        for row in game_board:
+            for letter in row:
+                letter.set('')
+        game_over = False
+        game_over_text.set('')
+
+
 # Main setup of game board with main game loop
-game_board = GameButton.create_blank_game_board()
+game_board = [[StringVar() for x in range(3)] for y in range(3)]
 # Makes a 3x3 board of buttons and places them into the mainframe
 for i in range(len(game_board)):
     for j in range(len(game_board[i])):
         GameButton(mainframe, textvariable=game_board[j][i]).grid(column=i, row=j, ipadx=15, ipady=40)
+
+# Bottom button for refreshing game board. Can only press if game state is WIN or TIE
+bottom_frame = ttk.Frame(root, borderwidth=3)
+bottom_frame.grid(column=0, row=1)
+ttk.Button(bottom_frame, textvariable=game_over_text, command=button_wipe_game_board).grid(ipadx=90, ipady=20)
 
 root.mainloop()
