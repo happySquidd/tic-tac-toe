@@ -13,12 +13,8 @@ from tkinter import ttk
 #   I think this might be useful in doing a full restructure of the code if desired. As it's getting a little bit messy right now
 
 # latest happysquid commit:
-# TODO: make it loop instead of quitting as it does now (erase squares and start over)
-# TODO: imo it should wait for input to reset squares to show the board when tied or won
-# TODO: or just create a reset button with condition text somewhere :D
-# added a turn switch (to determine current turn)
-# modified which letter is displayed/ added not allowing to switch already pressed button
-# modified the check for a win condition and added a check for a tie (tie check could be improved. i cant think of a better way rn lmao)
+# TODO: nahh we dont need to rewrite this code, its a marvel of coding as a whole
+#  too tired, but im gonna see how we could connect the AI to this
 
 # Setting up root window
 root = Tk()
